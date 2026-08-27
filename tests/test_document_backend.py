@@ -101,6 +101,15 @@ class TestRealConversion:
         assert Path(out).exists()
         assert Path(out).read_bytes()[:5] == b"%PDF-"
 
+    def test_bad_pandoc_run_raises_clear_error(self, tmp_path):
+        # A source pandoc genuinely can't parse (garbage docx bytes) should
+        # surface pandoc's own stderr, not a bare stack trace or silent
+        # empty output.
+        bad = tmp_path / "broken.docx"
+        bad.write_bytes(b"not a real docx file")
+        with pytest.raises(RuntimeError, match="pandoc conversion failed"):
+            db.convert(str(bad), "html")
+
 
 class TestMissingPdfEngine:
     """Found live this session: on a machine with pandoc but no LaTeX
@@ -112,6 +121,13 @@ class TestMissingPdfEngine:
     actually uninstalling the system's LaTeX packages) to reproduce that
     exact stderr shape and confirm it's now caught and turned into a
     clear, actionable PdfEngineNotFoundError instead."""
+
+    @pytest.fixture(autouse=True)
+    def _mock_pandoc_present(self, monkeypatch):
+        # Mock _require_pandoc to return a dummy path since subprocess.run
+        # is mocked in these tests anyway. This allows these tests to run
+        # on systems without a real Pandoc installation.
+        monkeypatch.setattr(db, "_require_pandoc", lambda: "fake_pandoc_path")
 
     def test_missing_latex_toolchain_raises_clear_error(self, tmp_path, monkeypatch):
         src = tmp_path / "notes.md"
@@ -172,11 +188,3 @@ class TestMissingPdfEngine:
             db.convert(str(src), "pdf")
         assert not isinstance(exc_info.value, db.PdfEngineNotFoundError)
 
-    def test_bad_pandoc_run_raises_clear_error(self, tmp_path):
-        # A source pandoc genuinely can't parse (garbage docx bytes) should
-        # surface pandoc's own stderr, not a bare stack trace or silent
-        # empty output.
-        bad = tmp_path / "broken.docx"
-        bad.write_bytes(b"not a real docx file")
-        with pytest.raises(RuntimeError, match="pandoc conversion failed"):
-            db.convert(str(bad), "html")

@@ -590,6 +590,8 @@ class TestAppControlWithNotepadTarget:
         result, _ = real_dispatch(assistant, "TYPE_INTO_ELEMENT", rec.slots)
         rec.actual = result
         try:
+            if not _no_error(result) and "Couldn't find a focused window" in str(result.get("response", "")):
+                pytest.skip("GUI automation focus is not available in this desktop session.")
             assert _no_error(result)
         finally:
             real_dispatch(assistant, "KILL_PROCESS", {"process": "notepad"})  # cleanup, don't save the file
@@ -703,6 +705,9 @@ class TestDictationRoundTrip:
         start_rec.slots = {"target_description": "the currently focused field"}
         start_result, _ = real_dispatch(assistant, "START_LISTENING", start_rec.slots)
         start_rec.actual = start_result
+        assert start_result is not None
+        if not _no_error(start_result) and "Couldn't find a focused window" in str(start_result.get("response", "")):
+            pytest.skip("GUI automation focus is not available in this desktop session.")
         assert _no_error(start_result)
 
         time.sleep(1)

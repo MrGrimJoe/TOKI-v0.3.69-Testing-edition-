@@ -945,7 +945,7 @@ def _extract_name(text: str) -> Optional[str]:
     m = _DOUBLE_QUOTED_RE.search(text)
     if m:
         return m.group(1).strip()
-    m = _QUOTED_RE.search(text)
+    m = _SINGLE_QUOTED_RE.search(text)
     if m:
         return m.group(1).strip()
     for pattern in _NAME_TRIGGERS:
@@ -2656,7 +2656,7 @@ def extract_slots(intent: str, user_text: str, wcl_variables: Optional[List[str]
         return {"path": _default_root_for(text), "pattern": pattern}
 
     if intent == "SET_CLIPBOARD":
-        m = _QUOTED_RE.search(text)
+        m = _DOUBLE_QUOTED_RE.search(text) or _SINGLE_QUOTED_RE.search(text)
         if m:
             return {"value": m.group(1).strip()}
         m = re.search(r"(?:copy|set clipboard to)\s+(.+)$", text, re.IGNORECASE)

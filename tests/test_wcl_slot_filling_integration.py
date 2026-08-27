@@ -34,14 +34,16 @@ class FakeWclResolver:
 @pytest.fixture
 def assistant():
     a = orchestrator.WindowsAIAssistant()
-    a.graph_router.close()
+    if a.graph_router is not None:
+        a.graph_router.close()
     a.graph_router = None  # force a graph miss -> straight to wcl_resolver
     real_wcl_resolver = a.wcl_resolver
     yield a
     # Some tests in this file swap a.wcl_resolver for a fake with no
     # close() -- always close the real one we created, not whatever the
     # test left behind.
-    real_wcl_resolver.close()
+    if real_wcl_resolver is not None:
+        real_wcl_resolver.close()
 
 
 def _run(assistant, prompt, wcl_result):
